@@ -1,0 +1,354 @@
+---
+title: "mailing_parse"
+author: "anastasia molotova"
+date: "4/19/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, error = FALSE)
+```
+
+# Loading the data (2018-2020)
+
+```{r}
+data_apr <- read.delim("data/mails/2018/2018-April.txt", header = FALSE, col.names = "text") 
+data_aug <- read.delim("data/mails/2018/2018-August.txt", header = FALSE, col.names = "text")
+data_dec <- read.delim("data/mails/2018/2018-December.txt", header = FALSE, col.names = "text")
+data_feb <- read.delim("data/mails/2018/2018-February.txt", header = FALSE, col.names = "text")
+data_jan <- read.delim("data/mails/2018/2018-January.txt", header = FALSE, col.names = "text")
+data_jul <- read.delim("data/mails/2018/2018-July.txt", header = FALSE, col.names = "text")
+data_jun <- read.delim("data/mails/2018/2018-June.txt", header = FALSE, col.names = "text")
+data_mar <- read.delim("data/mails/2018/2018-March.txt", header = FALSE, col.names = "text")
+data_may <- read.delim("data/mails/2018/2018-May.txt", header = FALSE, col.names = "text")
+data_nov <- read.delim("data/mails/2018/2018-November.txt", header = FALSE, col.names = "text")
+data_oct <- read.delim("data/mails/2018/2018-October.txt", header = FALSE, col.names = "text")
+data_sep <- read.delim("data/mails/2018/2018-September.txt", header = FALSE, col.names = "text")
+
+data_2018 = rbind(data_apr, data_aug, data_dec, data_feb, data_jan, data_jul, data_jun, data_mar, data_may, data_nov, data_oct, data_sep)
+
+print(dim(data_2018)[1] == (dim(data_apr)[1] + dim(data_aug)[1] + dim(data_dec)[1] + dim(data_feb)[1] + dim(data_jan)[1] + dim(data_jul)[1] + dim(data_jun)[1] + dim(data_mar)[1] + dim(data_may)[1] + dim(data_nov)[1] + dim(data_oct)[1] + dim(data_sep)[1]))
+
+rm(data_apr, data_aug, data_dec, data_feb, data_jan, data_jul, data_jun, data_mar, data_may, data_nov, data_oct, data_sep)
+
+```
+
+```{r}
+data_apr <- read.delim("data/mails/2019/2019-April.txt", header = FALSE, col.names = "text") 
+data_aug <- read.delim("data/mails/2019/2019-August.txt", header = FALSE, col.names = "text")
+data_dec <- read.delim("data/mails/2019/2019-December.txt", header = FALSE, col.names = "text")
+data_feb <- read.delim("data/mails/2019/2019-February.txt", header = FALSE, col.names = "text")
+data_jan <- read.delim("data/mails/2019/2019-January.txt", header = FALSE, col.names = "text")
+data_jul <- read.delim("data/mails/2019/2019-July.txt", header = FALSE, col.names = "text")
+data_jun <- read.delim("data/mails/2019/2019-June.txt", header = FALSE, col.names = "text")
+data_mar <- read.delim("data/mails/2019/2019-March.txt", header = FALSE, col.names = "text")
+data_may <- read.delim("data/mails/2019/2019-May.txt", header = FALSE, col.names = "text")
+data_nov <- read.delim("data/mails/2019/2019-November.txt", header = FALSE, col.names = "text")
+data_oct <- read.delim("data/mails/2019/2019-October.txt", header = FALSE, col.names = "text")
+data_sep <- read.delim("data/mails/2019/2019-September.txt", header = FALSE, col.names = "text")
+
+data_2019 = rbind(data_apr, data_aug, data_dec, data_feb, data_jan, data_jul, data_jun, data_mar, data_may, data_nov, data_oct, data_sep)
+
+print(dim(data_2019)[1] == (dim(data_apr)[1] + dim(data_aug)[1] + dim(data_dec)[1] + dim(data_feb)[1] + dim(data_jan)[1] + dim(data_jul)[1] + dim(data_jun)[1] + dim(data_mar)[1] + dim(data_may)[1] + dim(data_nov)[1] + dim(data_oct)[1] + dim(data_sep)[1])) 
+
+rm(data_apr, data_aug, data_dec, data_feb, data_jan, data_jul, data_jun, data_mar, data_may, data_nov, data_oct, data_sep)
+
+```
+
+
+
+```{r}
+data_apr <- read.delim("data/mails/2020/2020-April.txt", header = FALSE, col.names = "text")
+data_aug <- read.delim("data/mails/2020/2020-August.txt", header = FALSE, col.names = "text")
+data_dec <- read.delim("data/mails/2020/2020-December.txt", header = FALSE, col.names = "text")
+data_feb <- read.delim("data/mails/2020/2020-February.txt", header = FALSE, col.names = "text")
+data_jan <- read.delim("data/mails/2020/2020-January.txt", header = FALSE, col.names = "text")
+data_jul <- read.delim("data/mails/2020/2020-July.txt", header = FALSE, col.names = "text")
+data_jun <- read.delim("data/mails/2020/2020-June.txt", header = FALSE, col.names = "text")
+data_mar <- read.delim("data/mails/2020/2020-March.txt", header = FALSE, col.names = "text")
+data_may <- read.delim("data/mails/2020/2020-May.txt", header = FALSE, col.names = "text")
+data_nov <- read.delim("data/mails/2020/2020-November.txt", header = FALSE, col.names = "text")
+data_oct <- read.delim("data/mails/2020/2020-October.txt", header = FALSE, col.names = "text")
+data_sep <- read.delim("data/mails/2020/2020-September.txt", header = FALSE, col.names = "text")
+
+data_2020 = rbind(data_apr, data_aug, data_dec, data_feb, data_jan, data_jul, data_jun, data_mar, data_may, data_nov, data_oct, data_sep)
+
+print(dim(data_2020)[1] == (dim(data_apr)[1] + dim(data_aug)[1] + dim(data_dec)[1] + dim(data_feb)[1] + dim(data_jan)[1] + dim(data_jul)[1] + dim(data_jun)[1] + dim(data_mar)[1] + dim(data_may)[1] + dim(data_nov)[1] + dim(data_oct)[1] + dim(data_sep)[1])) 
+
+rm(data_apr, data_aug, data_dec, data_feb, data_jan, data_jul, data_jun, data_mar, data_may, data_nov, data_oct, data_sep)
+
+```
+
+```{r}
+my_data = rbind(data_2018, data_2019, data_2020)
+rm(data_2018, data_2019, data_2020)
+```
+
+# Counting threads
+
+```{r}
+library(stringr)
+my_data$thread_count = substring(my_data$text, 1, 20)
+my_data$thread_count = str_count(my_data$thread_count, ">")
+summary(my_data$thread_count)
+```
+
+# Detecting the subjects, dates, message_ids and replies (binary)
+
+```{r}
+library(tidyverse)
+my_data$from = ifelse(str_detect(substring(my_data$text, 1, 20), "From "), 1, 0)
+my_data$author = ifelse(str_detect(substring(my_data$text, 1, 20), "From:"), 1, 0)
+my_data$date = ifelse(str_detect(substring(my_data$text, 1, 20), "Date:"), 1, 0)
+my_data$subject = ifelse(str_detect(substring(my_data$text, 1, 20), "Subject:"), 1, 0)
+my_data$message_id = ifelse(str_detect(substring(my_data$text, 1, 20), "Message-ID:"), 1, 0)
+my_data$in_reply_to = ifelse(str_detect(substring(my_data$text, 1, 20), "In-Reply-To:"), 1, 0)
+
+```
+
+# Creating a unique id for each message
+
+```{r}
+my_data$info = ifelse(my_data$from == 1, paste0("start_",  seq(from = 1, to = 830846) ), NA)
+
+library(zoo)
+my_data$info = na.locf(my_data$info)
+```
+
+# Detecting the text(body) of the messages
+
+```{r}
+my_data$message_text = ifelse(my_data$message_id == 1, "start",
+                              ifelse(my_data$from == 1, "end", NA))
+
+my_data = my_data %>% 
+ group_by(grp = cumsum(!is.na(message_text))) %>% 
+ mutate(message_text = replace(message_text, first(message_text) == 'start', 'text')) %>% 
+ ungroup() %>% 
+ select(-grp)
+```
+
+# Detecting the author's e-mails and names
+
+```{r}
+my_data$author_mail = ifelse(my_data$author == 1, str_replace(my_data$text, "From:", ""), 0)
+my_data$author_mail = str_replace(my_data$author_mail, "@ending from", "")
+my_data$author_mail = str_replace(my_data$author_mail, "@end|ng |rom", "")
+
+my_data$author_name = str_extract(my_data$author_mail, pattern = "(?<=\\().*(?=\\))")
+my_data$author_mail = str_replace_all(my_data$author_mail, pattern = "(?<=\\().*(?=\\))", "")
+my_data$author_mail = gsub("\\(|\\)", "", my_data$author_mail)
+```
+
+# Detecting dates
+
+```{r}
+library(lubridate)
+my_data$date = ifelse(my_data$date == 1, str_replace(my_data$text, "Date:", ""), 0)
+
+my_data$date = gsub("\\+.*","", my_data$date)
+my_data$date = gsub("\\-.*","", my_data$date) 
+```
+
+# Detecting the subject
+
+```{r}
+my_data$subject = ifelse(my_data$subject == 1, str_replace(my_data$text, "Subject:", ""), 0)
+```
+
+# Detecting message_id
+
+```{r}
+my_data$message_id = ifelse(my_data$message_id == 1, str_replace(my_data$text, "Message-ID:", ""), 0)
+my_data$message_id = str_replace(my_data$message_id, "<", "")
+my_data$message_id = str_replace(my_data$message_id, ">", "")
+```
+
+# Getting the "in-reply-to" column
+
+```{r}
+my_data$in_reply_to = ifelse(my_data$in_reply_to == 1, str_replace(my_data$text, "In-Reply-To:", ""), 0)
+#убрать < и >
+my_data$in_reply_to = str_replace(my_data$in_reply_to, "<", "")
+my_data$in_reply_to = str_replace(my_data$in_reply_to, ">", "")
+```
+
+# Getting the text
+
+```{r}
+my_data$message_text = ifelse(my_data$message_text == 'text', my_data$text, NA)
+my_data$message_text = ifelse(str_detect(my_data$message_text, "Message-ID:"), NA, my_data$message_text)
+```
+
+# Deleting blank spaces
+
+```{r}
+my_data = my_data[!(is.na(my_data$text) | my_data$text == ""), ]
+```
+
+# Cleaning the table
+
+```{r}
+my_data = my_data %>% 
+        select(-from, -author)
+
+my_data$date = ifelse(my_data$date == 0, NA, my_data$date)
+my_data$subject = ifelse(my_data$subject == 0, NA, my_data$subject)
+my_data$message_id = ifelse(my_data$message_id == 0, NA, my_data$message_id)
+my_data$author_mail = ifelse(my_data$author_mail == 0, NA, my_data$author_mail)
+my_data$author_name = ifelse(my_data$author_name == 0, NA, my_data$author_name)
+my_data$in_reply_to = ifelse(my_data$in_reply_to == 0, NA, my_data$in_reply_to)
+```
+
+# Deleting repeated rows
+
+```{r}
+my_data = my_data %>% distinct() 
+```
+
+# Tidy format
+
+```{r}
+my_data = my_data %>% 
+  group_by(info) %>% 
+  fill(author_mail, author_name, date, subject, message_id, in_reply_to) %>% 
+  fill(author_mail, author_name, date, subject, message_id, in_reply_to, .direction = "up") 
+```
+
+# Text cleaning
+
+```{r}
+my_data$message_text = tolower(my_data$message_text)
+
+my_data$message_text <- gsub("@\\w+", "", my_data$message_text)
+my_data$message_text <- gsub("https?://.+", "", my_data$message_text)
+my_data$message_text <- gsub("\\d+\\w*\\d*", "", my_data$message_text)
+my_data$message_text <- gsub("#\\w+", "", my_data$message_text)
+my_data$message_text <- gsub("[^\x01-\x7F]", "", my_data$message_text)
+my_data$message_text <- gsub("[[:punct:]]", " ", my_data$message_text)
+
+my_data$message_text <- gsub("\n", " ", my_data$message_text)
+my_data$message_text <- gsub("^\\s+", "", my_data$message_text)
+my_data$message_text <- gsub("\\s+$", "", my_data$message_text)
+my_data$message_text <- gsub("[ |\t]+", " ", my_data$message_text)
+```
+
+# Detecting either it is a question or an answer
+
+```{r}
+my_data$quest_or_answ_bin = ifelse(str_detect(substring(my_data$text, 1, 20), "In-Reply-To:"), "a", ifelse(str_detect(substring(my_data$text, 1, 20), "References:"), "a", NA))
+
+my_data = my_data %>% 
+  group_by(info) %>% 
+  fill(quest_or_answ_bin) %>% 
+  fill(quest_or_answ_bin, .direction = "up") 
+
+my_data$quest_or_answ_bin = ifelse(is.na(my_data$quest_or_answ_bin), "q", "a")
+```
+
+# Preprocess the dates
+
+```{r}
+my_data$date = str_trim(my_data$date)
+# checking the exact patternal format
+my_data$date = str_extract_all(my_data$date, "(Mon|Tue|Wed|Thu|Fri|Sat|Sun|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday).\\s([0-9]|[0-3][0-9])\\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s(2018|2019|2020)\\s([0|1|2][0|1|2|3|4|5|6|7|8|9]):([0-9]{2}):([0-9]{2})", simplify = TRUE)
+```
+
+# Link-sharing
+
+```{r}
+data1 = my_data %>% select(info, text, thread_count) %>% filter(thread_count == 0) %>% select(-thread_count)
+data1$url_bin = ifelse(str_detect(data1$text, "https?://.+"), 1, NA)
+summary(data1$url_bin)
+
+my_data = full_join(my_data, data1)
+
+my_data = my_data %>% 
+  group_by(info) %>% 
+  fill(url_bin) %>% 
+  fill(url_bin, .direction = "up")
+my_data$url_bin = ifelse(is.na(my_data$url_bin), 0, my_data$url_bin)
+table(my_data$url_bin)
+rm(data1)
+```
+
+# Few more preprocessing
+
+```{r}
+my_data = my_data %>% select(-text) %>% filter(thread_count == 0) %>% select(-thread_count)
+
+#load("~/diploma/data/mails/ml_cleaned.RData")
+#library(tidyverse)
+```
+
+Divide the data into meta and texts (body)
+
+```{r}
+#my_data$drop = ifelse(str_detect(substring(my_data$text, 1, 20), ">"), 1, 0)
+#my_data = my_data %>% filter(drop == 0) %>% select(-drop)
+
+texts = my_data %>% select(info, message_text) %>% filter(!is.na(message_text))
+texts = texts[!(is.na(texts$message_text) | texts$message_text == ""), ]
+
+meta = my_data %>% select(-message_text)
+meta = meta %>% distinct() 
+meta = meta %>% select(-subject, -author_mail)
+
+meta = meta %>% distinct()
+
+rm(my_data)
+
+```
+
+How many unique mails & authors are there?
+
+```{r}
+print(c(length(unique(meta$info)), "unique e-mails"))
+print(c(length(unique(meta$author_name)), "unique authors"))
+```
+
+Datetime formatting
+
+```{r}
+library(lubridate)
+
+#meta$date1 = str_replace(meta$date, "(Mon|Tue|Wed|Thu|Fri|Sat|Sun|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday).", "")
+#meta$date1 = str_remove_all(meta$date1, ">")
+
+meta$date = str_replace(meta$date, "(Mon|Tue|Wed|Thu|Fri|Sat|Sun|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday).", "")
+
+meta = meta[!(is.na(meta$date) | meta$date == ""), ]
+meta$date = dmy_hms(meta$date)
+
+meta = meta %>% filter(date >= "2018-01-01 00:00:00" & date <= "2020-12-31 23:59:59" )
+
+```
+
+Dealing with texts
+
+```{r}
+texts <- texts %>% mutate(ind = row_number())
+texts <- texts %>% group_by(info) %>% mutate(ind = row_number()) %>%
+  tidyr::spread(key = ind, value = message_text)
+texts [is.na(texts)] <- ""
+texts <- tidyr::unite(texts, text,-info,sep =" " )
+texts$text <- trimws(texts$text)
+```
+
+Creating the final dataframe 
+
+```{r}
+all = full_join(meta, texts)
+```
+
+# Saving the cleaned data
+
+```{r}
+#rdata
+save(all, file = "data/mails/mailing_lists.RData")
+
+#load("data/mails/mailing_lists.RData")
+
+#csv
+write.csv(all,'data/mails/mailing_lists.csv', row.names = FALSE, fileEncoding = "UTF-8")
+```
