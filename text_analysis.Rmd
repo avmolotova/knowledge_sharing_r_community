@@ -1,0 +1,349 @@
+---
+title: "texts_analysis"
+author: "anastasia molotova"
+date: "5/19/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, error = FALSE)
+```
+
+# RQ2.2: What are the topics discussed by the community in both channels? 
+
+## In the mailing lists:
+
+```{r}
+load("data/mails/mailing_lists.RData")
+
+all$answered = ifelse(all$message_id %in% all$in_reply_to, 1, 0) 
+ml_q = all %>% filter(quest_or_answ_bin == "q" & answered == 1)
+
+ml_q$text = gsub('\\b\\w{1,2}\\b','',ml_q$text)
+```
+
+Preprocessing:
+
+```{r}
+library(tm)
+text_corpus <- VCorpus(VectorSource(ml_q$text))
+
+#text_corpus_clean <- tm_map(text_corpus, content_transformer(tolower))
+#text_corpus <- tm_map(text_corpus, stemDocument)
+
+text_corpus <- tm_map(text_corpus, removeNumbers)
+text_corpus <- tm_map(text_corpus, removeWords, c(stopwords(), "data", "time", "dat", "can"))
+text_corpus <- tm_map(text_corpus, removePunctuation)
+text_corpus <- tm_map(text_corpus, stripWhitespace)
+```
+
+Most popular tokens:
+
+```{r}
+library(wordcloud)
+wordcloud(text_corpus, min.freq = 100, random.order = FALSE,
+          colors=brewer.pal(8, "Dark2"))
+```
+
+Tuning the models:
+
+```{r}
+
+text_dtm <- DocumentTermMatrix(text_corpus)
+raw.sum=apply(text_dtm,1,FUN=sum)
+text_dtm=text_dtm[raw.sum!=0,]
+
+library("ldatuning")
+
+ml_result_1 <- FindTopicsNumber(
+  text_dtm,
+  topics = seq(from = 5, to = 30, by = 1),
+  metrics = c("Griffiths2004", "CaoJuan2009", "Arun2010", "Deveaud2014"),
+  method = "Gibbs",
+  control = list(seed = 17),
+  verbose = TRUE
+)
+
+FindTopicsNumber_plot(ml_result_1)
+```
+
+The optimal number is 16
+
+Training the model:
+
+```{r}
+library(topicmodels)
+ml_text_lda <- LDA(text_dtm, k = 16)
+save(ml_text_lda, file = "ml_16topics.RData")
+```
+
+Top-terms per topic:
+
+```{r}
+library(tidytext)
+text_topics1 <- tidy(ml_text_lda, matrix = "beta")
+text_topics1
+
+library(ggplot2)
+library(dplyr)
+
+ap_top_terms <- text_topics1 %>%
+group_by(topic) %>%
+slice_max(beta, n = 10) %>%
+ungroup() %>%
+arrange(topic, -beta)
+
+ap_top_terms %>%
+mutate(term = reorder_within(term, beta, topic)) %>%
+ggplot(aes(beta, term, fill = factor(topic))) +
+geom_col(show.legend = FALSE) +
+facet_wrap(~ topic, scales = "free") +
+  
+   scale_fill_manual(values = col_vector, name = "")+
+scale_y_reordered()
+```
+
+Plotting the changes in time:
+
+```{r}
+library("dplyr")
+library("reshape2")
+library("ggplot2")
+
+ml_tmResult <- posterior(ml_text_lda)
+ml_theta <- ml_tmResult$topics
+
+ml_q = ungroup(ml_q)
+ml_q_1 <- ml_q %>% 
+  mutate(id = rownames(.)) %>% 
+  filter(id %in% rownames(ml_theta)) %>% # keep only rows still in theta
+  cbind(ml_theta) %>% # now we can attach the topics to the data.frame
+  mutate(year = format(date, "%Y-%m")) # make year variable
+
+ml_top5termsPerTopic <- terms(ml_text_lda, 7)
+ml_topicNames <- apply(ml_top5termsPerTopic, 2, paste, collapse=" ")
+colnames(ml_q_1)[11:26] <- ml_topicNames
+
+ml_q_1 <- ml_q_1 %>% 
+  group_by(year) %>% 
+  summarise_at(vars(11:26), funs(mean)) %>% 
+  melt(id.vars = "year")
+
+library(RColorBrewer)
+n <- 16
+ml_qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, ml_qual_col_pals$maxcolors, rownames(ml_qual_col_pals)))
+
+
+require(pals)
+ggplot(ml_q_1, aes(x = year, y = value, fill = variable)) + 
+  geom_bar(stat = "identity") + 
+  labs(y = "proportion of topic", x = "", title = "Changes in proportions of the topics over time in Mailing Lists")+
+   theme_bw() + 
+   theme(axis.text.x = element_text(angle = 90, hjust = 1), 
+                      panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))+
+   scale_fill_manual(values = col_vector, name = "")
+```
+
+
+## On Stack OverFlow:
+
+```{r}
+library(readr)
+sof_posts_answers <- read_csv("data/sof/sof_posts&answers.csv")
+
+so_aswered = sof_posts_answers %>% select(id = Id_1, date = CreationDate, text = Body_1, author_id = OwnerUserId, AnswerCount, ViewCount, Title_1)
+so_aswered = so_aswered %>% filter(AnswerCount > 0)%>% distinct()
+# dim(so_aswered)[1]
+rm(sof_p, sof_a, sof_posts_answers)
+```
+
+Text preprocessing:
+
+```{r}
+so_aswered$text = tolower(so_aswered$text)
+so_aswered$text = gsub("<[^>]*>", "", so_aswered$text)
+#non_ans$text = gsub("code", "", non_ans$text)
+
+so_aswered$text <- gsub("@\\w+", "", so_aswered$text)
+so_aswered$text <- gsub("https?://.+", "", so_aswered$text)
+so_aswered$text <- gsub("\\d+\\w*\\d*", "", so_aswered$text)
+so_aswered$text <- gsub("#\\w+", "", so_aswered$text)
+so_aswered$text <- gsub("[^\x01-\x7F]", "", so_aswered$text)
+so_aswered$text <- gsub("[[:punct:]]", " ", so_aswered$text)
+# Remove spaces and newlines
+so_aswered$text <- gsub("\n", " ", so_aswered$text)
+so_aswered$text <- gsub("^\\s+", "", so_aswered$text)
+so_aswered$text <- gsub("\\s+$", "", so_aswered$text)
+so_aswered$text <- gsub("[ |\t]+", " ", so_aswered$text)
+
+#еще уберем символы в 1 длинну
+so_aswered$text = gsub('\\b\\w{1,2}\\b','',so_aswered$text)
+so_aswered$text = gsub('\\b\\w{3}\\b','',so_aswered$text)
+
+so_aswered = so_aswered %>% select(-AnswerCount, -author_id, -ViewCount)
+```
+
+Building the corpus:
+
+```{r}
+library(tm)
+so_ans_text_corpus <- VCorpus(VectorSource(so_aswered$text))
+
+#text_corpus_clean <- tm_map(text_corpus, content_transformer(tolower))
+#text_corpus <- tm_map(text_corpus, stemDocument)
+
+so_ans_text_corpus <- tm_map(so_ans_text_corpus, removeNumbers)
+so_ans_text_corpus <- tm_map(so_ans_text_corpus, removeWords, c(stopwords(), "data", "quot", "like"))
+so_ans_text_corpus <- tm_map(so_ans_text_corpus, removePunctuation)
+so_ans_text_corpus <- tm_map(so_ans_text_corpus, stripWhitespace)
+```
+
+Most frequent terms:
+
+```{r}
+library(wordcloud)
+wordcloud(so_ans_text_corpus, min.freq = 200, random.order = FALSE,
+          colors=brewer.pal(8, "Dark2"))
+```
+
+Tuning the models:
+
+```{r}
+so_ans_text_dtm <- DocumentTermMatrix(so_ans_text_corpus)
+
+# ui = unique(so_ans_text_dtm$i)
+# so_ans_text_dtm = so_ans_text_dtm[ui,]
+
+memory.limit(size = 50000)
+
+row_total = apply(so_ans_text_dtm, 1, sum)
+so_ans_text_dtm = so_ans_text_dtm[row_total>0,]
+
+#checkpoint 
+# save(so_ans_text_dtm, file = "so_ans_text_dtm.RData")
+# load("so_ans_text_dtm.RData")
+
+so_result <- FindTopicsNumber(
+   so_ans_text_dtm,
+   topics = seq(from = 10, to = 80, by = 2),
+   metrics = c("CaoJuan2009", "Arun2010", "Deveaud2014"),
+   method = "Gibbs",
+   control = list(seed = 17),
+   mc.cores = 8L,
+   verbose = TRUE
+)
+
+ FindTopicsNumber_plot(so_result)
+
+ 
+so_result_2 <- FindTopicsNumber(
+   so_ans_text_dtm,
+   topics = c(10, 11),
+   metrics = c("Griffiths2004","CaoJuan2009", "Arun2010", "Deveaud2014"),
+   method = "Gibbs",
+   control = list(seed = 17),
+   verbose = TRUE
+ )
+
+ FindTopicsNumber_plot(so_result_2)
+ 
+ system.time({ so_result_3 <- FindTopicsNumber(
+   so_ans_text_dtm,
+   topics = seq(from = 18, to = 64, by = 1),
+   metrics = c("Griffiths2004","CaoJuan2009", "Arun2010", "Deveaud2014"),
+   method = "Gibbs",
+   control = list(seed = 17),
+   verbose = TRUE
+ )
+}) 
+ 
+ so_result_3 <- FindTopicsNumber(
+   so_ans_text_dtm,
+   topics = seq(from = 10, to = 80, by = 2),
+   metrics = c("Griffiths2004","CaoJuan2009", "Arun2010", "Deveaud2014"),
+   method = "Gibbs",
+   control = list(seed = 17),
+   mc.cores = 8L,
+   verbose = TRUE
+ )
+
+ FindTopicsNumber_plot(so_result_3)
+ 
+# save(so_result_3, file = "so_topics_results_3.RData")
+```
+
+# 38 topics as an optimal number
+
+```{r}
+so_text_lda <- LDA(so_ans_text_dtm, k = 38)
+#save(so_text_lda, file = "so_38topics.RData")
+```
+
+Top terms per topic:
+
+```{r}
+library(tidytext)
+so_text_topics1 <- tidy(so_text_lda, matrix = "beta")
+so_text_topics1
+
+library(ggplot2)
+library(dplyr)
+
+so_ap_top_terms <- so_text_topics1 %>%
+group_by(topic) %>%
+slice_max(beta, n = 10) %>%
+ungroup() %>%
+arrange(topic, -beta)
+
+so_ap_top_terms %>%
+mutate(term = reorder_within(term, beta, topic)) %>%
+ggplot(aes(beta, term, fill = factor(topic))) +
+geom_col(show.legend = FALSE) +
+facet_wrap(~ topic, scales = "free") +
+scale_fill_manual(values = col_vector, name = "")+
+scale_y_reordered()
+```
+
+Changes in proportions:
+
+```{r}
+library("dplyr")
+library("reshape2")
+library("ggplot2")
+
+tmResult <- posterior(so_text_lda)
+theta <- tmResult$topics
+
+so_aswered = ungroup(so_aswered)
+so_aswered_1_1 <- so_aswered %>% 
+  mutate(id = rownames(.)) %>% 
+  filter(id %in% rownames(theta)) %>% # keep only rows still in theta
+  cbind(theta) %>% # now we can attach the topics to the data.frame
+  mutate(year = format(date, "%Y-%m")) # make year variable
+
+top5termsPerTopic <- terms(so_text_lda, 7)
+topicNames <- apply(top5termsPerTopic, 2, paste, collapse=" ")
+colnames(so_aswered_1)[7:44] <- topicNames
+
+so_aswered_1 <- so_aswered_1 %>% 
+  group_by(year) %>% 
+  summarise_at(vars(7:44), funs(mean)) %>% 
+  melt(id.vars = "year")
+
+library(RColorBrewer)
+n <- 38
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+
+
+require(pals)
+ggplot(so_aswered_1, aes(x = year, y = value, fill = variable)) + 
+  geom_bar(stat = "identity") + 
+  labs(y = "proportion of topic", x = "", title = "Changes in proportions of the topics over time on Stack OverFlow")+
+   theme_bw() + 
+   theme(axis.text.x = element_text(angle = 90, hjust = 1), 
+                      panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))+
+   scale_fill_manual(values = col_vector, name = "")
+```
+

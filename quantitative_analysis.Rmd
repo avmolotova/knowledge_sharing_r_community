@@ -1,0 +1,321 @@
+---
+title: "quantitative_analysis"
+author: "anastasia molotova"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, error = FALSE)
+```
+
+# RQ1: How the activity in both channels has been changing over time (from 2018 to 2020)?
+
+## H1.1: Users on Stack Overflow will ask and answer more questions per month rather than in mailing lists. (Deterding, 2012)
+
+Plotting for the mailing lists:
+
+```{r}
+load("data/mails/mailing_lists.RData")
+meta = all  
+
+library(tidyverse)
+library(lubridate)
+```
+
+
+```{r}
+df = meta %>% select(info, date, quest_or_answ_bin)
+
+df =df %>% distinct() 
+
+df$y = year(df$date)
+df$m = month(df$date)
+df = df %>% group_by(y, m) %>% add_tally()
+
+a = df %>% select(date, y, m, quest_or_answ_bin, info) %>% filter(quest_or_answ_bin == "a") %>% select(-quest_or_answ_bin)
+q = df %>% select(date, y, m, quest_or_answ_bin, info) %>% filter(quest_or_answ_bin == "q") %>% select(-quest_or_answ_bin)
+
+a = a %>% group_by(y, m) %>% add_tally()
+q = q %>% group_by(y, m) %>% add_tally()
+
+a = a %>% select(-info, -date)%>% distinct()
+q = q %>% select(-info, -date)%>% distinct()
+
+a= transform(a, date = as.Date(paste(y, m, 1, sep = "-")))
+q= transform(q, date = as.Date(paste(y, m, 1, sep = "-")))
+
+a$q_or_a = "answer"
+q$q_or_a = "question"
+
+df_factor = rbind(a,q)
+df_factor$q_or_a = as.factor(df_factor$q_or_a)
+library(scales)
+
+ml_2 = ggplot(data = df_factor)+
+  geom_line(aes(x = date, y = n, color = q_or_a),size=1.25)+
+  labs(x = "", y = "№ of questions and answers", color = "Question or answer", title = "Number of Q&A per Month in Mailing Lists") + 
+  scale_x_date(date_labels = "%b\n%Y", breaks = date_breaks("2 month"), limit=c(as.Date("2018-01-01"),as.Date("2020-11-09"))) + 
+  scale_y_continuous(limits = c(0,8000))+
+  theme_minimal()+
+  theme(legend.position = "bottom")
+
+ml_2
+#ggsave(file = "h1.1_ml.png", ml_2)
+```
+
+Plotting for Stack OverFlow:
+
+```{r}
+sof_posts_answers <- read_csv("data/sof/sof_posts&answers.csv")
+sof_p= sof_posts_answers %>% select(id = Id_1, date = CreationDate, text = Body_1, author_id = OwnerUserId)
+sof_p$quest_or_answ_bin = "q"
+
+sof_a = sof_posts_answers %>% select(id, date = creation_date, text = body, author_id = owner_user_id)
+sof_a$quest_or_answ_bin = "a"
+
+library(tidyverse)
+library(lubridate)
+sof_a$date = as_datetime(sof_a$date)
+sof_p$date = as_datetime(sof_p$date)
+
+sof = rbind(sof_a, sof_p)
+sof = sof %>% filter(date >= "2018-01-01" & date <= "2020-12-31")
+```
+
+
+```{r}
+df1 = sof %>% select(id, date, quest_or_answ_bin)
+
+df1 =df1 %>% distinct() 
+
+df1$y = year(df1$date)
+df1$m = month(df1$date)
+df1 = df1 %>% group_by(y, m) %>% add_tally()
+
+a1 = df1 %>% select(date, y, m, quest_or_answ_bin, id) %>% filter(quest_or_answ_bin == "a") %>% select(-quest_or_answ_bin)
+q1 = df1 %>% select(date, y, m, quest_or_answ_bin, id) %>% filter(quest_or_answ_bin == "q") %>% select(-quest_or_answ_bin)
+
+a1 = a1 %>% group_by(y, m) %>% add_tally()
+q1 = q1 %>% group_by(y, m) %>% add_tally()
+
+
+a1 = a1 %>% select(-id, -date)%>% distinct()
+q1 = q1 %>% select(-id, -date)%>% distinct()
+
+a1= transform(a1, date = as.Date(paste(y, m, 1, sep = "-")))
+q1= transform(q1, date = as.Date(paste(y, m, 1, sep = "-")))
+
+#library(zoo)
+#a1$date <- as.yearmon(paste(a1$y, a1$m), "%Y %m")
+#q1$date <- as.yearmon(paste(q1$y, q1$m), "%Y %m")
+
+a1$q_or_a = "answer"
+q1$q_or_a = "question"
+
+df_factor1 = rbind(a1,q1)
+df_factor1$q_or_a = as.factor(df_factor1$q_or_a)
+
+#график для этого кейса
+so_2 = ggplot(data = df_factor1)+
+  geom_line(aes(x = date, y = n, color = q_or_a),size=1.25)+
+  labs(x = "", y = "№ of questions and answers", color = "Question or answer",  title = "Number of Q&A per Month on Stack OverFlow") + 
+  scale_x_date(date_labels = "%b\n%Y", breaks = date_breaks("2 month"), limit=c(as.Date("2018-01-01"),as.Date("2020-11-09"))) + 
+  scale_y_continuous(limits = c(0,8000))+
+  theme_minimal()+
+  theme(legend.position="bottom")
+
+so_2
+# ggsave(file = "h1.1_sof.png", so_2)
+```
+
+Yes, people on SOF more active.
+
+## H1.2: Since the community has accumulated knowledge and will now only pass it on, the number of new questions and answers per month will fall over time in both channels. (Zagalsky et al., 2018)
+
+```{r}
+library(patchwork)
+ml_2 + so_2
+```
+
+No, the number of questions ever increased.
+
+## H1.3: Users on the Stack Overflow will share links to other resources more often than users in mailing lists. (Vasilescu, B., 2012)
+
+For mailing lists:
+
+```{r}
+url = meta %>% select(info, quest_or_answ_bin, url_bin) %>% distinct()
+
+url$quest_or_answ_bin = ifelse(url$quest_or_answ_bin == "a", "Answer",
+              ifelse(url$quest_or_answ_bin == "q", "Question", url$quest_or_answ_bin))
+url$url_bin = ifelse(url$url_bin == "1", "Link",
+              ifelse(url$url_bin == "0", "No Link", url$url_bin))
+
+
+url = url %>% group_by(quest_or_answ_bin, url_bin) %>% add_tally()
+url = na.omit(url)
+
+library(scales)
+
+ml_3 = url %>%
+  dplyr::count(quest_or_answ_bin, url_bin)%>% 
+  dplyr::group_by(quest_or_answ_bin)%>%
+  dplyr::mutate(pct = n /sum(n))%>%
+  ggplot(aes(x = quest_or_answ_bin, y = pct, fill = url_bin)) + 
+  geom_col(width=0.8)+
+  geom_text(aes(label = paste0(round(pct * 100), '%')),
+            position = position_stack(vjust = 0.5))+
+  labs(x = "", y = "", fill = "There is a Link", title = "How do Users Share the Links in Q&A in Mailing Lists?")+
+  scale_y_continuous(labels = scales::percent)+
+  theme_minimal()
+ml_3
+ 
+#ggsave(ml_3, file = "h1.3_ml.png")
+```
+
+For Stack OverFlow:
+
+```{r}
+sof1 = sof %>% select(id, text, quest_or_answ_bin) 
+sof1$url_bin = ifelse(str_detect(sof1$text, "https?://.+"), 1, 0)
+
+
+url1 = sof1 %>% select(id, quest_or_answ_bin, url_bin) %>% distinct()
+
+url1$quest_or_answ_bin = ifelse(url1$quest_or_answ_bin == "a", "Answer",
+              ifelse(url1$quest_or_answ_bin == "q", "Question", url1$quest_or_answ_bin))
+url1$url_bin = ifelse(url1$url_bin == "1", "Link",
+              ifelse(url1$url_bin == "0", "No Link", url1$url_bin))
+
+url1 = url1 %>% group_by(quest_or_answ_bin, url_bin) %>% add_tally()
+
+
+
+
+library(dplyr) 
+library(scales)
+
+so_3 = url1 %>%
+  dplyr::count(quest_or_answ_bin, url_bin)%>% 
+  dplyr::group_by(quest_or_answ_bin)%>%
+  dplyr::mutate(pct = n /sum(n))%>%
+  ggplot(aes(x = quest_or_answ_bin, y = pct, fill = url_bin)) + 
+  geom_col(width=0.8)+
+  geom_text(aes(label = paste0(round(pct * 100), '%')),
+            position = position_stack(vjust = 0.5))+
+  labs(x = "", y = "", fill = "There is a Link", title = "How do Users Share the Links in Q&A on Stack OverFlow?")+
+  scale_y_continuous(labels = scales::percent)+
+  theme_minimal()
+so_3
+
+#ggsave(so_3, file = "h1.3_sof.png")
+```
+
+# Comparing the length of the discussions in two channels
+
+For mailing lists:
+
+```{r}
+questions_mails = all %>% filter(quest_or_answ_bin == "q")
+answers_mails = all %>% filter(quest_or_answ_bin == "a")
+#rm(all)
+```
+
+For SOF: 
+
+```{r}
+questions_sof = sof %>% filter(quest_or_answ_bin == "q")
+answers_sof = sof %>% filter(quest_or_answ_bin == "a")
+rm(sof)
+
+questions_sof$text = tolower(questions_sof$text)
+questions_sof$text = gsub("<[^>]*>", "", questions_sof$text)
+
+questions_sof$text <- gsub("@\\w+", "", questions_sof$text)
+questions_sof$text <- gsub("https?://.+", "", questions_sof$text)
+questions_sof$text <- gsub("\\d+\\w*\\d*", "", questions_sof$text)
+questions_sof$text <- gsub("#\\w+", "", questions_sof$text)
+questions_sof$text <- gsub("[^\x01-\x7F]", "", questions_sof$text)
+questions_sof$text <- gsub("[[:punct:]]", " ", questions_sof$text)
+questions_sof$text <- gsub("\n", " ", questions_sof$text)
+questions_sof$text <- gsub("^\\s+", "", questions_sof$text)
+questions_sof$text <- gsub("\\s+$", "", questions_sof$text)
+questions_sof$text <- gsub("[ |\t]+", " ", questions_sof$text)
+
+answers_sof$text = tolower(answers_sof$text)
+answers_sof$text = gsub("<[^>]*>", "", answers_sof$text)
+answers_sof$text <- gsub("@\\w+", "", answers_sof$text)
+answers_sof$text <- gsub("https?://.+", "", answers_sof$text)
+answers_sof$text <- gsub("\\d+\\w*\\d*", "", answers_sof$text)
+answers_sof$text <- gsub("#\\w+", "", answers_sof$text)
+answers_sof$text <- gsub("[^\x01-\x7F]", "", answers_sof$text)
+answers_sof$text <- gsub("[[:punct:]]", " ", answers_sof$text)
+answers_sof$text <- gsub("\n", " ", answers_sof$text)
+answers_sof$text <- gsub("^\\s+", "", answers_sof$text)
+answers_sof$text <- gsub("\\s+$", "", answers_sof$text)
+answers_sof$text <- gsub("[ |\t]+", " ", answers_sof$text)
+```
+
+# counting the length of q&as
+
+```{r}
+library(stringi)
+
+questions_mails$text_counts = nchar(gsub(" ", "", questions_mails$text, fixed = TRUE))
+
+answers_mails$text_counts = nchar(gsub(" ", "", answers_mails$text, fixed = TRUE))
+
+questions_sof$text_counts = nchar(gsub(" ", "", questions_sof$text, fixed = TRUE))
+questions_sof = questions_sof %>% filter(text_counts > 0)
+
+answers_sof$text_counts = nchar(gsub(" ", "", answers_sof$text, fixed = TRUE))
+answers_sof = answers_sof %>% filter(text_counts > 0)
+```
+
+checking assumptions
+
+normality:
+
+```{r}
+library("car")
+qqPlot(questions_mails$text_counts)
+shapiro.test(questions_mails$text_counts)
+
+qqPlot(answers_mails$text_counts)
+library(nortest)
+ad.test(answers_mails$text_counts)
+#shapiro.test(answers_mails$text_counts)
+
+qqPlot(questions_sof$text_counts)
+ad.test(questions_sof$text_counts)
+#shapiro.test(questions_sof$text_counts)
+
+qqPlot(answers_sof$text_counts)
+ad.test(answers_sof$text_counts)
+#shapiro.test(answers_sof$text_counts)
+```
+
+variance are equal:
+
+```{r}
+var.test(questions_mails$text_counts, questions_sof$text_counts)
+var.test(answers_mails$text_counts, answers_sof$text_counts)
+```
+
+
+t-tests
+
+```{r}
+t_test_questions = t.test(questions_mails$text_counts, questions_sof$text_counts, var.equal = FALSE, alternative = "greater")
+library(pander)
+pander(t_test_questions)
+```
+
+```{r}
+t_test_answers = t.test(answers_mails$text_counts, answers_sof$text_counts, var.equal = FALSE, alternative = "greater")
+pander(t_test_answers)
+```
+
+
+
+
